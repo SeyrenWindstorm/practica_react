@@ -1,139 +1,145 @@
-// src/components/register/reg.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Form, Button, Alert } from "react-bootstrap";
-import { useGoogleReCaptcha } from "react-google-recaptcha-v3"; // Para reCAPTCHA v3
 
 const Register = ({ onClose }) => {
   const [inputUsername, setInputUsername] = useState("");
   const [inputPassword, setInputPassword] = useState("");
+  const [inputConfirmPassword, setInputConfirmPassword] = useState("");
   const [inputEmail, setInputEmail] = useState("");
-  const [show, setShow] = useState(false);
+  const [showError, setShowError] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { executeRecaptcha } = useGoogleReCaptcha(); // Para usar reCAPTCHA v3
+
+  useEffect(() => {
+    // Carga el script de reCAPTCHA cuando se monta el componente
+    const loadRecaptcha = () => {
+      const script = document.createElement("script");
+      script.src = "https://www.google.com/recaptcha/api.js?render=6LdTA2YqAAAAAJkNuflDy00nSKlKOSY1TXOBQut5";
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    };
+
+    loadRecaptcha();
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    // Verifica si reCAPTCHA está disponible
-    if (!executeRecaptcha) {
-      console.log("Recaptcha not yet available");
+    // Verifica si las contraseñas coinciden
+    if (inputPassword !== inputConfirmPassword) {
+      alert("Las contraseñas no coinciden");
       return;
     }
 
-    // Ejecutar reCAPTCHA y obtener el token
-    const token = await executeRecaptcha("register"); // 'register' es la acción que defines
-    if (!token) {
-      setShow(true);
+    // Verifica que reCAPTCHA esté disponible
+    if (!window.grecaptcha) {
+      console.error("reCAPTCHA no cargado");
       return;
     }
 
-    // URL del API para verificar el captcha
-    const API_URL = "http://localhost:8071/api/verify-captcha";
+    // Ejecuta reCAPTCHA v3 y obtiene el token
+    window.grecaptcha.ready(async function () {
+      const token = await window.grecaptcha.execute(
+        "6LdTA2YqAAAAAJkNuflDy00nSKlKOSY1TXOBQut5",
+        { action: "register" }
+      );
 
-    // Enviar el token al backend para verificarlo
-    try {
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ token }),
-      });
+      console.log("Token de reCAPTCHA:", token); // Token generado
 
-      const data = await response.json();
-      if (!data.success) {
-        setShow(true);
-        return;
+      // Envía los datos del formulario y el token al backend
+      try {
+        setLoading(true);
+        const response = await fetch("http://localhost:8001/api/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: inputUsername,
+            email: inputEmail,
+            password: inputPassword,
+            token: token,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          setShowError(true); // Muestra error si la verificación falla
+        } else {
+          console.log("Usuario registrado con éxito!");
+          onClose(); // Cierra el formulario si el registro fue exitoso
+        }
+      } catch (error) {
+        console.error("Error al registrar el usuario:", error);
+        setShowError(true);
+      } finally {
+        setLoading(false);
       }
-
-      console.log("Captcha verified successfully!");
-
-      setLoading(true);
-      // Simulación de una pequeña demora
-      await delay(500);
-      console.log(`Username: ${inputUsername}, Password: ${inputPassword}, Email: ${inputEmail}`);
-      setLoading(false);
-      onClose();
-    } catch (error) {
-      console.error("Error during verification:", error);
-      setShow(true);
-    }
+    });
   };
-
-  function delay(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
 
   return (
     <Form className="shadow p-4 bg-white rounded" onSubmit={handleSubmit}>
-      <div className="h4 mb-2 text-center">Register</div>
-      {show && (
-        <Alert className="mb-2" variant="danger" onClose={() => setShow(false)} dismissible>
-          Captcha verification failed. Please try again.
+      <div className="h4 mb-2 text-center">Registro</div>
+      {showError && (
+        <Alert className="mb-2" variant="danger" onClose={() => setShowError(false)} dismissible>
+          Error en la verificación de Captcha o en el registro. Inténtalo de nuevo.
         </Alert>
       )}
       <Form.Group className="mb-2" controlId="username">
-        <Form.Label>Username</Form.Label>
+        <Form.Label>Nombre de usuario</Form.Label>
         <Form.Control
           type="text"
           value={inputUsername}
-          placeholder="Username"
+          placeholder="Nombre de usuario"
           onChange={(e) => setInputUsername(e.target.value)}
           required
         />
       </Form.Group>
       <Form.Group className="mb-2" controlId="email">
-        <Form.Label>Email</Form.Label>
+        <Form.Label>Correo electrónico</Form.Label>
         <Form.Control
           type="email"
           value={inputEmail}
-          placeholder="Email"
+          placeholder="Correo electrónico"
           onChange={(e) => setInputEmail(e.target.value)}
           required
         />
       </Form.Group>
       <Form.Group className="mb-2" controlId="password">
-        <Form.Label>Password</Form.Label>
+        <Form.Label>Contraseña</Form.Label>
         <Form.Control
           type="password"
           value={inputPassword}
-          placeholder="Password"
+          placeholder="Contraseña"
           onChange={(e) => setInputPassword(e.target.value)}
           required
         />
       </Form.Group>
       <Form.Group className="mb-2" controlId="password-confirm">
-        <Form.Label>Confirm Password</Form.Label>
+        <Form.Label>Confirmar Contraseña</Form.Label>
         <Form.Control
           type="password"
-          value={inputPassword}
-          placeholder="Confirm Password"
-          onChange={(e) => setInputPassword(e.target.value)}
+          value={inputConfirmPassword}
+          placeholder="Confirmar Contraseña"
+          onChange={(e) => setInputConfirmPassword(e.target.value)}
           required
         />
       </Form.Group>
 
-      <form onSubmit={handleSubmit}>
-      <ReCAPTCHA
-        sitekey="6LdTA2YqAAAAAJkNuflDy00nSKlKOSY1TXOBQut5"
-        onChange={handleCaptcha}
-      />
-      <button type="submit">Submit</button>
-    </form>
-        
-
       {!loading ? (
         <Button className="w-100 register-btn" variant="primary" type="submit">
-          Register
+          Registrarse
         </Button>
       ) : (
         <Button className="w-100 register-btn" variant="primary" disabled>
-          Registering...
+          Registrando...
         </Button>
       )}
       <div className="d-grid justify-content-end">
         <Button className="text-muted px-0" variant="link" onClick={onClose}>
-          Cancel
+          Cancelar
         </Button>
       </div>
     </Form>

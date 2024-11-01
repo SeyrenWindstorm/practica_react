@@ -10,63 +10,73 @@ const Login = () => {
   const [inputUsername, setInputUsername] = useState("");
   const [inputPassword, setInputPassword] = useState("");
   const [showRegister, setShowRegister] = useState(false);
-  const [show, setShow] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setLoading(true);
-    await delay(500);
-    console.log(`Username :${inputUsername}, Password :${inputPassword}`);
-    if (inputUsername !== "admin" || inputPassword !== "admin") {
-      setShow(true);
+
+    try {
+      const response = await fetch('http://localhost:8018/apiL/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: inputUsername,
+          password: inputPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log('Login successful:', data);
+        // Almacenar el token en localStorage
+        localStorage.setItem('token', data.token);
+        // Redirigir al usuario a la página principal o a otra ruta
+        window.location.href = '/home'; // Cambia esto según tus rutas
+      } else {
+        console.error('Login failed:', data);
+        setShowAlert(true);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setShowAlert(true);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleRegister = () => {
-    setShowRegister(true);
-  };
-
-  const closeRegister = () => {
-    setShowRegister(false);
-  };
-
-  function delay(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
+  const handleRegister = () => setShowRegister(true);
+  const closeRegister = () => setShowRegister(false);
 
   return (
     <div
       className="sign-in__wrapper"
       style={{ backgroundImage: `url(${BackgroundImage})` }}
     >
-      {/* Overlay */}
       <div className="sign-in__backdrop"></div>
-      {/* Form */}
       {showRegister ? (
         <Register onClose={closeRegister} />
       ) : (
         <Form className="shadow p-4 bg-white rounded" onSubmit={handleSubmit}>
-          {/* Header */}
           <img
             className="img-thumbnail mx-auto d-block mb-2"
             src={Logo}
             alt="logo"
           />
           <div className="h4 mb-2 text-center">Sign In</div>
-          {/* Alert */}
-          {show ? (
+          {showAlert && (
             <Alert
               className="mb-2"
               variant="danger"
-              onClose={() => setShow(false)}
+              onClose={() => setShowAlert(false)}
               dismissible
             >
               Incorrect username or password.
             </Alert>
-          ) : (
-            <div />
           )}
           <Form.Group className="mb-2" controlId="username">
             <Form.Label>Username</Form.Label>
@@ -91,26 +101,24 @@ const Login = () => {
           <Form.Group className="mb-2" controlId="checkbox">
             <Form.Check type="checkbox" label="Remember me" />
           </Form.Group>
-          {!loading ? (
-            <Button className="w-100 login-btn" variant="primary" type="submit">
-              Log In
-            </Button>
-          ) : (
-            <Button className="w-100 login-btn" variant="primary" type="submit" disabled>
-              Logging In...
-            </Button>
-          )}
+          <Button
+            className="w-100 login-btn"
+            variant="primary"
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? "Logging In..." : "Log In"}
+          </Button>
           <div>
             Don't have an account?
             <br />
             <Button
               className="w-100 register-btn"
               variant="secondary"
-              type="button" // Cambiar a type="button" para evitar el envío del formulario
+              type="button"
               onClick={handleRegister}
             >
-              Register 
-              
+              Register
             </Button>
           </div>
           <div className="d-grid justify-content-end">
