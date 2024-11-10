@@ -38,7 +38,7 @@ const Register = ({ onClose }) => {
     }
 
     // Ejecuta reCAPTCHA v3 y obtiene el token
-    window.grecaptcha.ready(async function () {
+    window.grecaptcha.ready(async () => {
       const token = await window.grecaptcha.execute(
         "6LdTA2YqAAAAAJkNuflDy00nSKlKOSY1TXOBQut5",
         { action: "register" }
@@ -128,15 +128,9 @@ const Register = ({ onClose }) => {
         />
       </Form.Group>
 
-      {!loading ? (
-        <Button className="w-100 register-btn" variant="primary" type="submit">
-          Registrarse
-        </Button>
-      ) : (
-        <Button className="w-100 register-btn" variant="primary" disabled>
-          Registrando...
-        </Button>
-      )}
+      <Button className="w-100 register-btn" variant="primary" type="submit" disabled={loading}>
+        {loading ? "Registrando..." : "Registrarse"}
+      </Button>
       <div className="d-grid justify-content-end">
         <Button className="text-muted px-0" variant="link" onClick={onClose}>
           Cancelar

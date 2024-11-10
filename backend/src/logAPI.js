@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs'); // Cambiado a bcryptjs
 const jwt = require('jsonwebtoken');
 
 dotenv.config(); // Carga las variables de entorno de .env
@@ -28,10 +28,12 @@ app.use(bodyParser.json());
 
 // Esquema de usuario
 const userSchema = new mongoose.Schema({
-    username: String,
-    password: String,
+  username: { type: String, unique: true },
+  email: { type: String, unique: true },
+  password: String,
+  objects: [{ type: String }] // Lista de objetos
 });
-const User = mongoose.model('users', userSchema);
+const User = mongoose.model('User', userSchema);
 
 // Endpoint para iniciar sesión
 app.post('/apiL/login', async (req, res) => {
@@ -50,7 +52,7 @@ app.post('/apiL/login', async (req, res) => {
     }
 
     // Verifica la contraseña
-    const isPasswordValid = bcrypt.compare(password, user.password);
+    const isPasswordValid =  bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Contraseña incorrecta' });
     }
@@ -61,12 +63,11 @@ app.post('/apiL/login', async (req, res) => {
     });
 
     res.json({ token, message: 'Inicio de sesión exitoso' });
-    console.log(`se logeo`);
+    console.log(`Usuario logueado: ${username}`);
 
   } catch (error) {
     console.error('Error al iniciar sesión:', error);
     res.status(500).json({ message: 'Error al iniciar sesión' });
-
   }
 });
 

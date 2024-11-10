@@ -1,10 +1,14 @@
 import React, { useState } from "react";
 import { Form, Button, Alert } from "react-bootstrap";
 import Register from './reg'; // Asegúrate de la ruta correcta
-import "./log.css";
+import Profile from './profile';
+import "./Style.css";
 
 import BackgroundImage from "../../assets/images/background.png";
 import Logo from "../../assets/images/logo.png";
+
+const handleProfile = () => setShowRegister(true);
+const closeProfile = () => setShowRegister(false);
 
 const Login = () => {
   const [inputUsername, setInputUsername] = useState("");
@@ -33,10 +37,8 @@ const Login = () => {
 
       if (response.ok) {
         console.log('Login successful:', data);
-        // Almacenar el token en localStorage
         localStorage.setItem('token', data.token);
-        // Redirigir al usuario a la página principal o a otra ruta
-        window.location.href = '/home'; // Cambia esto según tus rutas
+        window.location.href = '/profile'; // Redirige al perfil después del inicio de sesión
       } else {
         console.error('Login failed:', data);
         setShowAlert(true);
@@ -51,6 +53,7 @@ const Login = () => {
 
   const handleRegister = () => setShowRegister(true);
   const closeRegister = () => setShowRegister(false);
+
 
   return (
     <div
